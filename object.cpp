@@ -20,3 +20,8 @@ SDL_Point Object::getPos()
 {
     return m_pos;
 }
+
+void Object::setPos(SDL_Point pos)
+{
+    m_pos = pos;
+}

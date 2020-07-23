@@ -65,7 +65,8 @@ void Game::update(float dt)
     if((pos.x > 0 && m_platformDir == IOx)||
             (pos.x+size.x < m_size.x && m_platformDir == Ox)){
         m_platform->update(dt, m_platformDir);
-    }if(!m_ballOnPlate){
+    }
+    if(!m_ballOnPlate){
         SDL_FPoint velocity = m_ball->getVelocity();
         m_ball->update(dt, Ox);
         for(auto i = m_blocks.begin(); i != m_blocks.end(); i++){
@@ -77,17 +78,17 @@ void Game::update(float dt)
             }
         }
         m_ball->update(dt, Oy);
-        for(auto i = m_blocks.begin(); i != m_blocks.end(); i++){
-            if(getCollision(m_ball, *i)){
-                velocity.y *= -1;
-                delete *i;
-                m_blocks.erase(i);
-                break;
-            }
-        }
         if(getCollision(m_ball, m_platform)){
             velocity.y *= -1;
-        }
+        }else
+            for(auto i = m_blocks.begin(); i != m_blocks.end(); i++){
+                if(getCollision(m_ball, *i)){
+                    velocity.y *= -1;
+                    delete *i;
+                    m_blocks.erase(i);
+                    break;
+                }
+            }
         m_ball->setVelocity(velocity);
         checkWindowCollision();
     }
@@ -153,8 +154,29 @@ Game *Game::instance()
     return m_instance;
 }
 
+void Game::drawIntro(){
+    SDL_Texture* texture = SpriteManager::instance()->getSprite("intro");
+    SDL_Point textureSize;
+    SDL_QueryTexture(texture, NULL, NULL, &textureSize.x, &textureSize.y);
+    SDL_Rect dest = {(m_size.x-textureSize.x)/2,
+                    (m_size.y-textureSize.y)/2,
+                    textureSize.x,
+                    textureSize.y};
+    SDL_RenderCopy(m_renderer, texture, nullptr, &dest);
+    SDL_RenderPresent(m_renderer);
+    SDL_Event e;
+    bool quit = false;
+    while(!quit){
+        while(SDL_PollEvent(&e))
+            if(e.type == SDL_KEYDOWN)
+                quit = true;
+    }
+}
+
 void Game::start()
 {
+    setupObjects(m_size.x, m_size.y);
+    m_running = true;
     float frameDelay = 1000.f/m_fps;
     float frameStart;
     float ticks;
@@ -167,6 +189,7 @@ void Game::start()
         return;
     }
     SDL_Event e;
+    drawIntro();
     while(m_running){
         frameStart = SDL_GetTicks();
         while(SDL_PollEvent(&e)){
@@ -183,7 +206,106 @@ void Game::start()
         if(frameDelay > ticks){
             SDL_Delay(frameDelay-ticks);
         }
+        if(checkWin()){
+            m_running = false;
+        }
     }
+    if(checkWin())
+        drawEnd(SpriteManager::instance()->getSprite("win"));
+}
+
+bool Game::checkWin(){
+    return m_blocks.size() == 0;
+}
+
+void Game::drawEnd(SDL_Texture* texture){
+    SDL_Point textureSize;
+    SDL_QueryTexture(texture, NULL, NULL, &textureSize.x, &textureSize.y);
+    SDL_Rect dest = {(m_size.x-textureSize.x)/2,
+                    (m_size.y-textureSize.y)/2,
+                    textureSize.x,
+                    textureSize.y};
+    SDL_RenderCopy(m_renderer, texture, nullptr, &dest);
+    SDL_RenderPresent(m_renderer);
+    SDL_Event e;
+    bool quit = false;
+    while(!quit){
+        while(SDL_PollEvent(&e))
+            if(e.type == SDL_KEYDOWN &&
+                    e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_ESCAPE)
+                quit = true;
+            else if(e.type == SDL_KEYDOWN &&
+                    e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_SPACE)
+                start();
+    }
+}
+
+void Game::setupObjects(int w, int h){
+    int platform_width = 0.2*w;
+    int platform_height = 0.03*w;
+    int platform_x = (w-platform_width)/2;
+    int platform_y = h-platform_height;
+
+    int ball_size = 0.03*w;
+    float ball_x_velocity = (10+rand()%30)/100.f;
+    float ball_y_velocity = (10+rand()%30)/-100.f;
+    Logger::log(ball_x_velocity);
+    Logger::log(ball_y_velocity);
+    if(m_platform == nullptr){
+        m_platform = new RectObject({platform_x, platform_y},
+                                platform_width,
+                                platform_height);
+        m_platform->setBorder(2);
+        m_platform->setBaseColor({106, 4, 15, 255});
+        m_platform->setBorderColor({55, 6, 23, 255});
+        m_platform->setVelocity({0.5f, 0.5f});
+    }else{
+        m_platform->setPos({platform_x, platform_y});
+    }
+    if(m_ball == nullptr){
+        m_ball = new SpriteObject({platform_x+(platform_width-ball_size)/2,
+                                   platform_y-platform_height},
+                                  ball_size,
+                                  ball_size);
+        m_ball->setSprite(SpriteManager::instance()->getSprite("ball"));
+    }else{
+        m_ball->setPos({platform_x+(platform_width-ball_size)/2,
+                            platform_y-platform_height});
+    }
+    m_ball->setVelocity({ball_x_velocity, ball_y_velocity});
+
+    const int lines = 4;
+    string config[lines] = {
+        "1111111111",
+        "0011111100",
+        "0001111000",
+        "0000110000"
+    };
+    RectObject* obj;
+    int blocks_start_x = 0;
+    int blocks_start_y = 40;
+    int blocks_width = w;
+    int blocks_height = 200;
+
+    int one_block_width = (blocks_start_x+blocks_width)/config->size();
+    int one_block_height = (blocks_start_y+blocks_height)/lines;
+    int y = blocks_start_y;
+    for(int i = 0; i < lines; i++){
+        int x = blocks_start_x;
+        for(size_t j = 0; j < config->size(); j++){
+            if(config[i][j] != '0'){
+                obj = new RectObject({x, y}, one_block_width, one_block_height);
+                obj->setBaseColor({214, 40, 40, 255});
+                obj->setBorderColor({0, 0, 0, 0});
+                obj->setBorder(2);
+                m_blocks.push_back(obj);
+            }
+            x += one_block_width;
+        }
+        y += one_block_height;
+    }
+
+    Logger::log("Objects created");
 }
 
 void Game::init(int w, int h)
@@ -220,64 +342,7 @@ void Game::init(int w, int h)
     Logger::log("Renderer created");
 
     SpriteManager::instance()->addSprite(m_renderer, "ball" ,"./ballSprite.png");
+    SpriteManager::instance()->addSprite(m_renderer, "intro", "../intro.png");
+    SpriteManager::instance()->addSprite(m_renderer, "win", "../win.png");
     Logger::log("Sprite manager initialized");
-
-    int platform_width = 0.2*w;
-    int platform_height = 0.03*w;
-    int platform_x = (w-platform_width)/2;
-    int platform_y = h-platform_height;
-
-    int ball_size = 0.03*w;
-    float ball_x_velocity = (10+rand()%30)/100.f;
-    float ball_y_velocity = (10+rand()%30)/-100.f;
-    Logger::log(ball_x_velocity);
-    Logger::log(ball_y_velocity);
-
-    m_platform = new RectObject({platform_x, platform_y},
-                                platform_width,
-                                platform_height);
-    m_platform->setBorder(2);
-    m_platform->setBaseColor({106, 4, 15, 255});
-    m_platform->setBorderColor({55, 6, 23, 255});
-    m_platform->setVelocity({1.f, 1.f});
-    m_ball = new SpriteObject({platform_x+(platform_width-ball_size)/2,
-                               platform_y-platform_height},
-                              ball_size,
-                              ball_size);
-    m_ball->setSprite(SpriteManager::instance()->getSprite("ball"));
-    m_ball->setVelocity({ball_x_velocity, ball_y_velocity});
-
-    const int lines = 4;
-    string config[lines] = {
-        "1111111111",
-        "0011111100",
-        "0001111000",
-        "0000110000"
-    };
-    RectObject* obj;
-    int blocks_start_x = 0;
-    int blocks_start_y = 40;
-    int blocks_width = w;
-    int blocks_height = 200;
-
-    int one_block_width = (blocks_start_x+blocks_width)/config->size();
-    int one_block_height = (blocks_start_y+blocks_height)/lines;
-    int y = blocks_start_y;
-    for(int i = 0; i < lines; i++){
-        int x = blocks_start_x;
-        for(size_t j = 0; j < config->size(); j++){
-            if(config[i][j] != '0'){
-                obj = new RectObject({x, y}, one_block_width, one_block_height);
-                obj->setBaseColor({214, 40, 40, 255});
-                obj->setBorderColor({0, 0, 0, 0});
-                obj->setBorder(2);
-                m_blocks.push_back(obj);
-            }
-            x += one_block_width;
-        }
-        y += one_block_height;
-    }
-
-
-    Logger::log("Objects created");
 }

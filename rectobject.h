@@ -17,6 +17,7 @@ public:
     void setBorder(int border);
     int getWidth();
     int getHeight();
+    void scale(float sx, float sy);
 
     SDL_FPoint getVelocity();
     void setVelocity(SDL_FPoint v);

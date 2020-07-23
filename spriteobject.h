@@ -17,7 +17,7 @@ public:
     SDL_FPoint getVelocity();
     void setVelocity(SDL_FPoint v);
 
-private:
+protected:
     SDL_Texture* m_sprite = nullptr;
     int m_width, m_height;
     SDL_FPoint  m_velocity;

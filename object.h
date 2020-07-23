@@ -20,6 +20,7 @@ public:
     virtual void update(float dt, Axis axis = All);
     virtual void move(int dx, int dy);
     SDL_Point getPos();
+    void setPos(SDL_Point pos);
 
 protected:
     SDL_Point m_pos;

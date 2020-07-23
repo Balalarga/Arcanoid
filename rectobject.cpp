@@ -75,6 +75,12 @@ int RectObject::getHeight()
     return m_height;
 }
 
+void RectObject::scale(float sx, float sy)
+{
+    m_width *= sx;
+    m_height *= sy;
+}
+
 SDL_FPoint RectObject::getVelocity()
 {
     return m_velocity;

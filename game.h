@@ -3,11 +3,12 @@
 
 #include "rectobject.h"
 #include "spriteobject.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <vector>
-
 using namespace std;
+
 class Game
 {
 public:
@@ -22,6 +23,10 @@ public:
     void collisionDetect();
     bool getCollision(SpriteObject* ball, RectObject* obj);
 
+    void drawIntro();
+    void drawEnd(SDL_Texture *texture);
+    bool checkWin();
+    void setupObjects(int w, int h);
 private:
     static Game* m_instance;
     Game();
