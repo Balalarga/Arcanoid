@@ -11,11 +11,11 @@ public:
     void draw(SDL_Renderer *render) override;
     void scale(float sx, float sy);
     void setSprite(SDL_Texture* sprite);
-    void update(float dt) override;
-    void setVelocity(SDL_FPoint v);
+    void update(float dt, Axis axis = All) override;
     int getWidth();
     int getHeight();
     SDL_FPoint getVelocity();
+    void setVelocity(SDL_FPoint v);
 
 private:
     SDL_Texture* m_sprite = nullptr;

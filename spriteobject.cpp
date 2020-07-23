@@ -32,10 +32,18 @@ void SpriteObject::setSprite(SDL_Texture *sprite)
     m_sprite = sprite;
 }
 
-void SpriteObject::update(float dt)
+void SpriteObject::update(float dt, Axis axis)
 {
-    m_pos.x += dt*m_velocity.x;
-    m_pos.y += dt*m_velocity.y;
+    if(axis == None)
+        return;
+    if(axis == All || axis == Ox)
+        m_pos.x += dt*m_velocity.x;
+    if(axis == All || axis == Oy)
+        m_pos.y += dt*m_velocity.y;
+    if(axis == IAll || axis == IOx)
+        m_pos.x -= dt*m_velocity.x;
+    if(axis == IAll || axis == IOy)
+        m_pos.y -= dt*m_velocity.y;
 }
 
 void SpriteObject::setVelocity(SDL_FPoint v)

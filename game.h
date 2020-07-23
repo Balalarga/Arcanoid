@@ -10,9 +10,6 @@
 using namespace std;
 class Game
 {
-    enum CollisionSide{
-        None, Top, Bottom, Left, Right
-    };
 public:
     ~Game();
     static Game* instance();
@@ -21,9 +18,9 @@ public:
     void input(SDL_Event& e);
     void update(float dt);
     void draw();
-    void checkWindowCollect();
+    void checkWindowCollision();
     void collisionDetect();
-    CollisionSide getCollision(SpriteObject* ball, RectObject* obj);
+    bool getCollision(SpriteObject* ball, RectObject* obj);
 
 private:
     static Game* m_instance;
@@ -38,6 +35,7 @@ private:
     Color m_windowColor{3, 7, 30, 255};
     int m_fps = 60;
     bool m_ballOnPlate = true;
+    Axis m_platformDir = None;
 
     vector<RectObject*> m_blocks;
     RectObject* m_platform = nullptr;

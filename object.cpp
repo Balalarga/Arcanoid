@@ -6,9 +6,8 @@ Object::Object(SDL_Point pos):
 
 }
 
-void Object::update(float dt)
+void Object::update(float dt, Axis axis)
 {
-
 }
 
 void Object::move(int dx, int dy)

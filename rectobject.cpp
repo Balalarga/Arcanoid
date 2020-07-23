@@ -51,6 +51,20 @@ void RectObject::draw(SDL_Renderer* render)
                            defColor.a);
 }
 
+void RectObject::update(float dt, Axis axis)
+{
+    if(axis == None)
+        return;
+    if(axis == All || axis == Ox)
+        m_pos.x += dt*m_velocity.x;
+    if(axis == All || axis == Oy)
+        m_pos.y += dt*m_velocity.y;
+    if(axis == IAll || axis == IOx)
+        m_pos.x -= dt*m_velocity.x;
+    if(axis == IAll || axis == IOy)
+        m_pos.y -= dt*m_velocity.y;
+}
+
 int RectObject::getWidth()
 {
     return m_width;
@@ -59,6 +73,17 @@ int RectObject::getWidth()
 int RectObject::getHeight()
 {
     return m_height;
+}
+
+SDL_FPoint RectObject::getVelocity()
+{
+    return m_velocity;
+}
+
+void RectObject::setVelocity(SDL_FPoint v)
+{
+    m_velocity.x = v.x;
+    m_velocity.y = v.y;
 }
 void RectObject::setBaseColor(Color c)
 {

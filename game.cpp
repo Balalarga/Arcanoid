@@ -28,18 +28,15 @@ void Game::input(SDL_Event& e)
         }else if(m_ballOnPlate && e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_SPACE){
             m_ballOnPlate = false;
         }else if(e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_LEFT){
-            m_platform->move(-10, 0);
+            m_platformDir = IOx;
         }else if(e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_RIGHT){
-            m_platform->move(10, 0);
+            m_platformDir = Ox;
         }
-    }
-}
-
-void Game::update(float dt)
-{
-    if(!m_ballOnPlate){
-        collisionDetect();
-        m_ball->update(dt);
+    }else if(e.type == SDL_KEYUP){
+        if(e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_LEFT ||
+                e.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_RIGHT){
+            m_platformDir = None;
+        }
     }
 }
 
@@ -61,8 +58,42 @@ void Game::draw()
     SDL_RenderPresent(m_renderer);
 }
 
+void Game::update(float dt)
+{
+    SDL_Point pos = m_platform->getPos();
+    SDL_Point size = {m_platform->getWidth(), m_platform->getHeight()};
+    if((pos.x > 0 && m_platformDir == IOx)||
+            (pos.x+size.x < m_size.x && m_platformDir == Ox)){
+        m_platform->update(dt, m_platformDir);
+    }if(!m_ballOnPlate){
+        SDL_FPoint velocity = m_ball->getVelocity();
+        m_ball->update(dt, Ox);
+        for(auto i = m_blocks.begin(); i != m_blocks.end(); i++){
+            if(getCollision(m_ball, *i)){
+                velocity.x *= -1;
+                delete *i;
+                m_blocks.erase(i);
+                break;
+            }
+        }
+        m_ball->update(dt, Oy);
+        for(auto i = m_blocks.begin(); i != m_blocks.end(); i++){
+            if(getCollision(m_ball, *i)){
+                velocity.y *= -1;
+                delete *i;
+                m_blocks.erase(i);
+                break;
+            }
+        }
+        if(getCollision(m_ball, m_platform)){
+            velocity.y *= -1;
+        }
+        m_ball->setVelocity(velocity);
+        checkWindowCollision();
+    }
+}
 
-void Game::checkWindowCollect()
+void Game::checkWindowCollision()
 {
     int width = m_ball->getWidth();
     int height = m_ball->getHeight();
@@ -79,25 +110,7 @@ void Game::checkWindowCollect()
     m_ball->setVelocity(velocity);
 }
 
-void Game::collisionDetect()
-{
-    SDL_FPoint velocity = m_ball->getVelocity();
-
-    for(auto& block: m_blocks){
-        CollisionSide collision = getCollision(m_ball, block);
-        if(collision == Top || collision == Bottom){
-            velocity.y *= -1;
-        }else if(collision == Left || collision == Right){
-            velocity.x *= -1;
-        }
-    }
-    if(getCollision(m_ball, m_platform) == Top){
-        velocity.y *= -1;
-    }
-    m_ball->setVelocity(velocity);
-}
-
-Game::CollisionSide Game::getCollision(SpriteObject* ball, RectObject* obj)
+bool Game::getCollision(SpriteObject* ball, RectObject* obj)
 {
     SDL_Rect ballRect = {
         ball->getPos().x,
@@ -115,9 +128,9 @@ Game::CollisionSide Game::getCollision(SpriteObject* ball, RectObject* obj)
             ballRect.x + ballRect.w > rect2.x &&
             ballRect.y < rect2.y + rect2.h &&
             ballRect.y + ballRect.h > rect2.y) {
-        return Bottom;
+        return true;
     }
-    return None;
+    return false;
 }
 
 Game::~Game()
@@ -165,7 +178,6 @@ void Game::start()
             }
         }
         update(frameDelay);
-        checkWindowCollect();
         draw();
         ticks = SDL_GetTicks() - frameStart;
         if(frameDelay > ticks){
@@ -227,6 +239,7 @@ void Game::init(int w, int h)
     m_platform->setBorder(2);
     m_platform->setBaseColor({106, 4, 15, 255});
     m_platform->setBorderColor({55, 6, 23, 255});
+    m_platform->setVelocity({1.f, 1.f});
     m_ball = new SpriteObject({platform_x+(platform_width-ball_size)/2,
                                platform_y-platform_height},
                               ball_size,
